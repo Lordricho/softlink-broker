@@ -1,6 +1,6 @@
 # Softlink Broker 💰
 
-A modern fintech-style broker platform built with PHP, MySQL, and HTML/CSS. Trade smarter, grow faster.
+A modern fintech-style broker platform built with PHP, PostgreSQL, and HTML/CSS. Trade smarter, grow faster.
 
 ## 🚀 Features
 
@@ -14,16 +14,16 @@ A modern fintech-style broker platform built with PHP, MySQL, and HTML/CSS. Trad
 
 ## 🛠 Tech Stack
 
-- **Backend**: PHP 7.4+
-- **Database**: MySQL 5.7+
+- **Backend**: PHP 7.4+ (with PDO)
+- **Database**: PostgreSQL 12+
 - **Frontend**: HTML5, CSS3
 - **Authentication**: Session-based (can be upgraded to JWT)
-- **Hosting**: Railway, Render, or any PHP-compatible server
+- **Hosting**: Render, Railway, or any PHP-compatible server
 
 ## 📋 Requirements
 
 - PHP 7.4 or higher
-- MySQL 5.7 or higher
+- PostgreSQL 12 or higher
 - Composer (optional, for package management)
 - Git
 
@@ -40,18 +40,21 @@ cd softlink-broker
 cp .env.example .env
 ```
 
-Edit `.env` and add your local database credentials:
+Edit `.env` and add your local PostgreSQL credentials:
 ```env
 DB_HOST=localhost
 DB_NAME=softlink_broker
-DB_USER=root
+DB_USER=postgres
 DB_PASS=your_password
-DB_PORT=3306
+DB_PORT=5432
 ```
 
 ### 3. Create Database
 ```bash
-mysql -u root -p < schema.sql
+# Using psql (PostgreSQL command line)
+psql -U postgres -f schema.sql
+
+# Or copy-paste schema.sql content into pgAdmin
 ```
 
 ### 4. Run Locally
@@ -65,67 +68,101 @@ php -S localhost:8000
 
 Visit `http://localhost:8000` in your browser.
 
-## 🚀 Deploy to Railway (Recommended)
+## 🚀 Deploy to Render (Recommended - FREE)
+
+Render offers a **true free tier** with no credit card required.
+
+### 1. Create Render Account
+- Go to [render.com](https://render.com)
+- Sign up with GitHub
+
+### 2. Create Web Service
+- Click **"New +"** → **"Web Service"**
+- Connect your GitHub repo: `Lordricho/softlink-broker`
+- Configure:
+  - **Name**: softlink-broker
+  - **Region**: Choose closest to you
+  - **Branch**: main
+  - **Build Command**: (leave empty)
+  - **Start Command**: (leave empty)
+- Click **"Create Web Service"**
+- Wait 5 minutes for deployment ⏳
+
+### 3. Create PostgreSQL Database
+- Click **"New +"** → **"PostgreSQL"**
+- Configure:
+  - **Name**: softlink-broker-db
+  - Leave other settings default
+- Click **"Create"**
+- Wait 2 minutes for database ⏳
+
+### 4. Connect Database
+1. Click on your **web service** (softlink-broker)
+2. Go to **"Environment"** tab
+3. Copy the connection details from your PostgreSQL service
+4. Add environment variables:
+   ```
+   DB_HOST = (from PostgreSQL Internal Database URL)
+   DB_NAME = (from PostgreSQL - usually "postgres")
+   DB_USER = (from PostgreSQL)
+   DB_PASS = (from PostgreSQL)
+   DB_PORT = 5432
+   APP_ENV = production
+   ```
+5. Click **"Save"**
+6. Render auto-redeploys
+
+### 5. Your Site is Live! 🎉
+- Render gives you a URL: `https://softlink-broker-xxxxx.onrender.com`
+- Share it with friends
+- Test registration and login
+
+---
+
+## 🚀 Deploy to Railway
 
 ### 1. Create Railway Account
 - Go to [railway.app](https://railway.app)
 - Sign up with GitHub
 
 ### 2. Create New Project
-- Click "New Project" → "Deploy from GitHub repo"
-- Select this repository
+- Click **"New Project"** → **"Deploy from GitHub repo"**
+- Select `softlink-broker`
+- Click **"Deploy"**
+- Wait 2-3 minutes ⏳
 
-### 3. Add MySQL Service
-- Click "+" button in Railway dashboard
-- Select "MySQL"
-- Railway will automatically provision the database
+### 3. Add PostgreSQL Database
+- Click **"+"** button
+- Select **"PostgreSQL"**
+- Railway auto-provisions it
+- Wait 1-2 minutes ⏳
 
 ### 4. Set Environment Variables
-In Railway project settings, add:
-```env
-DB_HOST=your_railway_mysql_host
-DB_NAME=railway (or your chosen name)
-DB_USER=root
-DB_PASS=your_password
-DB_PORT=3306
-APP_ENV=production
-```
+- Click on `softlink-broker` service
+- Go to **"Variables"** tab
+- Add:
+  ```
+  DB_HOST = postgresql (Railway internal hostname)
+  DB_NAME = (from PostgreSQL details)
+  DB_USER = postgres
+  DB_PASS = (from PostgreSQL details)
+  DB_PORT = 5432
+  APP_ENV = production
+  ```
+- Click **"Save"**
 
-### 5. Deploy
-Railway automatically deploys from GitHub. Just push to main branch!
+### 5. Deploy & Test
+- Railway redeploys automatically
+- Your site is live at provided URL
 
-## 🚀 Deploy to Render
-
-### 1. Create Render Account
-- Go to [render.com](https://render.com)
-- Sign up
-
-### 2. Create New Service
-- "New" → "Web Service"
-- Connect GitHub repository
-- Select this repo
-
-### 3. Configure
-```
-Build Command: (Leave blank - PHP)
-Start Command: php -S 0.0.0.0:$PORT
-Environment: PHP
-```
-
-### 4. Add Database
-- Create a new PostgreSQL or MySQL database service
-- Link to your web service
-
-### 5. Set Environment Variables
-Add in Render dashboard:
-- `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `DB_PORT`
+---
 
 ## 📁 Project Structure
 
 ```
 softlink-broker/
 ├── config/
-│   ├── db.php           # Database connection (env-based)
+│   ├── db.php           # PostgreSQL PDO connection
 │   ├── auth.php         # Authentication middleware
 │   ├── helpers.php      # Helper functions
 │   └── logout.php       # Logout handler
@@ -135,7 +172,7 @@ softlink-broker/
 ├── register.php         # Registration page
 ├── login.php            # Login page
 ├── dashboard.php        # User dashboard (protected)
-├── schema.sql           # Database schema
+├── schema.sql           # PostgreSQL database schema
 ├── .env.example         # Environment template
 └── README.md            # This file
 ```
@@ -143,13 +180,14 @@ softlink-broker/
 ## 🔐 Security Features
 
 - ✅ Password hashing with `password_hash()`
-- ✅ SQL injection prevention with prepared statements
+- ✅ SQL injection prevention with prepared statements (PDO)
 - ✅ Session-based authentication
 - ✅ Input validation and sanitization
 - ✅ XSS protection with `htmlspecialchars()`
-- 🔄 HTTPS enforcement (on Render/Railway)
+- ✅ HTTPS enforcement (on Render/Railway)
+- ✅ PostgreSQL ENUM constraints for data integrity
 
-## 👤 User Workflows
+## 👥 User Workflows
 
 ### Registration
 1. Visit `/register.php`
@@ -172,27 +210,33 @@ softlink-broker/
 ## 📊 Database Schema
 
 ### Users Table
-- `id` - Primary key
+- `id` - Primary key (auto-increment)
 - `fullname`, `email`, `phone` - User info
 - `password` - Hashed password
 - `balance` - Account balance
-- `created_at` - Registration timestamp
+- `is_verified` - Email verification status
+- `created_at`, `updated_at` - Timestamps
 
 ### Transactions Table
 - `id` - Primary key
 - `user_id` - Foreign key to users
-- `type` - deposit/withdrawal/trade/fee
+- `type` - ENUM: deposit/withdrawal/trade/fee
 - `amount` - Transaction amount
-- `status` - pending/completed/failed
+- `status` - ENUM: pending/completed/failed
+- `reference` - Unique transaction reference
 - `created_at` - Transaction timestamp
 
 ### Login Logs Table
 - Tracks user login history
 - Records IP address and user agent
 
+### Wallets Table
+- Tracks user wallet balance per currency
+- Links to users table
+
 ## 🔄 Next Steps
 
-1. **Implement Deposits** - Add payment gateway (Stripe, Paystack, Flutterwave)
+1. **Implement Deposits** - Add payment gateway (Paystack, Flutterwave)
 2. **Implement Withdrawals** - Bank transfer integration
 3. **Email Verification** - Send verification link on signup
 4. **2FA Support** - Two-factor authentication
@@ -200,22 +244,28 @@ softlink-broker/
 6. **Admin Panel** - System administration
 7. **API** - RESTful API for mobile app
 
-## 🐛 Troubleshooting
+## 🆘 Troubleshooting
 
 ### Database Connection Error
 - Check `.env` file has correct credentials
-- Ensure MySQL is running
+- Ensure PostgreSQL is running
 - Verify user has database privileges
+- Test connection: `psql -U user -h host -d dbname`
 
 ### Session Not Working
 - Check PHP `session.save_path` is writable
 - Verify cookies are enabled
-- Check `session_start()` is called
+- Check `session_start()` is called on every page
 
 ### 404 Errors on Render/Railway
 - Ensure all `.php` files are uploaded
 - Check web root is set correctly
 - Verify `.htaccess` for URL rewriting (if needed)
+
+### PDO Connection Errors
+- Verify PostgreSQL driver is installed: `php -m | grep pdo`
+- Check `pgsql` extension is enabled
+- Ensure DB_PORT is correct (PostgreSQL default: 5432)
 
 ## 📝 License
 
@@ -230,11 +280,11 @@ Building the future of fintech in Africa 🚀
 
 For issues or questions:
 - Open a GitHub issue
-- Email: [your-email@example.com]
+- Email: richard@softlink-broker.com
 - Twitter: [@Lordricho]
 
 ---
 
 **Status**: 🚧 Active Development  
 **Last Updated**: June 2026  
-**Version**: 1.0.0-alpha
+**Version**: 1.1.0-postgresql

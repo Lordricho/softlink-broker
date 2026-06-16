@@ -36,25 +36,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $message = 'Invalid phone number';
         $message_type = 'error';
     } else {
-        // Check if email exists
-        $check = $conn->prepare('SELECT id FROM users WHERE email = ?');
-        $check->bind_param('s', $email);
-        $check->execute();
-        $check->store_result();
+        try {
+            // Check if email exists
+            $check_stmt = $conn->prepare('SELECT id FROM users WHERE email = :email');
+            $check_stmt->execute([':email' => $email]);
 
-        if ($check->num_rows > 0) {
-            $message = 'Email already registered. Please login or use a different email';
-            $message_type = 'error';
-        } else {
-            // Hash password
-            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+            if ($check_stmt->rowCount() > 0) {
+                $message = 'Email already registered. Please login or use a different email';
+                $message_type = 'error';
+            } else {
+                // Hash password
+                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-            // Insert user
-            $stmt = $conn->prepare('INSERT INTO users (fullname, email, phone, password, balance, created_at) VALUES (?, ?, ?, ?, 0, NOW())');
-            $stmt->bind_param('ssss', $fullname, $email, $phone, $hashed_password);
+                // Insert user
+                $insert_stmt = $conn->prepare(
+                    'INSERT INTO users (fullname, email, phone, password, balance, created_at) '
+                    . 'VALUES (:fullname, :email, :phone, :password, 0, CURRENT_TIMESTAMP) '
+                    . 'RETURNING id'
+                );
+                
+                $insert_stmt->execute([
+                    ':fullname' => $fullname,
+                    ':email' => $email,
+                    ':phone' => $phone,
+                    ':password' => $hashed_password
+                ]);
 
-            if ($stmt->execute()) {
-                $user_id = $conn->insert_id;
+                $result = $insert_stmt->fetch();
+                $user_id = $result['id'];
 
                 // Create session
                 $_SESSION['user_id'] = $user_id;
@@ -70,11 +79,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // Redirect to dashboard
                 header('Location: dashboard.php');
                 exit();
-            } else {
-                $message = 'Registration failed. Please try again';
-                $message_type = 'error';
-                error_log('Registration error: ' . $conn->error);
             }
+        } catch (PDOException $e) {
+            $message = 'Registration failed. Please try again';
+            $message_type = 'error';
+            error_log('Registration error: ' . $e->getMessage());
         }
     }
 }
