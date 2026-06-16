@@ -23,39 +23,49 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $message = 'Invalid email format';
         $message_type = 'error';
     } else {
-        // Query user by email
-        $stmt = $conn->prepare('SELECT id, fullname, email, password FROM users WHERE email = ?');
-        $stmt->bind_param('s', $email);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        try {
+            // Query user by email
+            $stmt = $conn->prepare('SELECT id, fullname, email, password FROM users WHERE email = :email');
+            $stmt->execute([':email' => $email]);
 
-        if ($result->num_rows === 1) {
-            $user = $result->fetch_assoc();
+            if ($stmt->rowCount() === 1) {
+                $user = $stmt->fetch();
 
-            // Verify password
-            if (password_verify($password, $user['password'])) {
-                // Password correct - create session
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['user'] = [
-                    'id' => $user['id'],
-                    'fullname' => $user['fullname'],
-                    'email' => $user['email']
-                ];
+                // Verify password
+                if (password_verify($password, $user['password'])) {
+                    // Password correct - create session
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['user'] = [
+                        'id' => $user['id'],
+                        'fullname' => $user['fullname'],
+                        'email' => $user['email']
+                    ];
 
-                // Log login activity
-                $log_stmt = $conn->prepare('INSERT INTO login_logs (user_id, login_time) VALUES (?, NOW())');
-                $log_stmt->bind_param('i', $user['id']);
-                $log_stmt->execute();
+                    // Log login activity
+                    $log_stmt = $conn->prepare(
+                        'INSERT INTO login_logs (user_id, login_time, ip_address, user_agent) '
+                        . 'VALUES (:user_id, CURRENT_TIMESTAMP, :ip_address, :user_agent)'
+                    );
+                    $log_stmt->execute([
+                        ':user_id' => $user['id'],
+                        ':ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
+                        ':user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? ''
+                    ]);
 
-                header('Location: dashboard.php');
-                exit();
+                    header('Location: dashboard.php');
+                    exit();
+                } else {
+                    $message = 'Invalid email or password';
+                    $message_type = 'error';
+                }
             } else {
                 $message = 'Invalid email or password';
                 $message_type = 'error';
             }
-        } else {
-            $message = 'Invalid email or password';
+        } catch (PDOException $e) {
+            $message = 'Login failed. Please try again';
             $message_type = 'error';
+            error_log('Login error: ' . $e->getMessage());
         }
     }
 }
@@ -143,6 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <h2>Softlink Broker</h2>
     <nav>
         <a href="index.php">Home</a>
+        <a href="login.php">Login</a>
         <a href="register.php">Register</a>
     </nav>
 </header>

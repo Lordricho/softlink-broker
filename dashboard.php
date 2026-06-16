@@ -6,30 +6,40 @@ include('config/helpers.php');
 // Require authentication
 $user_id = requireAuth();
 
-// Get user details
-$stmt = $conn->prepare('SELECT id, fullname, email, phone, created_at, balance FROM users WHERE id = ?');
-$stmt->bind_param('i', $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$user = $result->fetch_assoc();
+try {
+    // Get user details
+    $user_stmt = $conn->prepare('SELECT id, fullname, email, phone, created_at, balance FROM users WHERE id = :id');
+    $user_stmt->execute([':id' => $user_id]);
+    $user = $user_stmt->fetch();
 
-if (!$user) {
-    session_destroy();
-    header('Location: login.php');
-    exit();
+    if (!$user) {
+        session_destroy();
+        header('Location: login.php');
+        exit();
+    }
+
+    // Get recent transactions
+    $tx_stmt = $conn->prepare(
+        'SELECT type, amount, description, created_at FROM transactions '
+        . 'WHERE user_id = :user_id '
+        . 'ORDER BY created_at DESC LIMIT 10'
+    );
+    $tx_stmt->execute([':user_id' => $user_id]);
+    $transactions = $tx_stmt->fetchAll();
+
+    // Get account statistics
+    $stats_stmt = $conn->prepare(
+        'SELECT COUNT(*) as tx_count, '
+        . 'COALESCE(SUM(CASE WHEN type=\'deposit\' THEN amount ELSE 0 END), 0) as total_deposits, '
+        . 'COALESCE(SUM(CASE WHEN type=\'withdrawal\' THEN amount ELSE 0 END), 0) as total_withdrawals '
+        . 'FROM transactions WHERE user_id = :user_id'
+    );
+    $stats_stmt->execute([':user_id' => $user_id]);
+    $stats = $stats_stmt->fetch();
+} catch (PDOException $e) {
+    error_log('Dashboard error: ' . $e->getMessage());
+    die('Error loading dashboard. Please try again.');
 }
-
-// Get recent transactions
-$tx_stmt = $conn->prepare('SELECT type, amount, description, created_at FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 10');
-$tx_stmt->bind_param('i', $user_id);
-$tx_stmt->execute();
-$transactions = $tx_stmt->get_result();
-
-// Get account statistics
-$stats_stmt = $conn->prepare('SELECT COUNT(*) as tx_count, SUM(CASE WHEN type="deposit" THEN amount ELSE 0 END) as total_deposits, SUM(CASE WHEN type="withdrawal" THEN amount ELSE 0 END) as total_withdrawals FROM transactions WHERE user_id = ?');
-$stats_stmt->bind_param('i', $user_id);
-$stats_stmt->execute();
-$stats = $stats_stmt->get_result()->fetch_assoc();
 ?>
 
 <!DOCTYPE html>
@@ -287,7 +297,7 @@ $stats = $stats_stmt->get_result()->fetch_assoc();
         <!-- Recent Transactions -->
         <div class="section">
             <h2>Recent Transactions</h2>
-            <?php if ($transactions->num_rows > 0): ?>
+            <?php if (!empty($transactions)): ?>
                 <table class="transactions-table">
                     <thead>
                         <tr>
@@ -298,14 +308,14 @@ $stats = $stats_stmt->get_result()->fetch_assoc();
                         </tr>
                     </thead>
                     <tbody>
-                        <?php while ($tx = $transactions->fetch_assoc()): ?>
+                        <?php foreach ($transactions as $tx): ?>
                             <tr>
                                 <td><span class="badge <?php echo $tx['type']; ?>"><?php echo ucfirst($tx['type']); ?></span></td>
                                 <td><?php echo formatCurrency($tx['amount']); ?></td>
                                 <td><?php echo htmlspecialchars($tx['description'] ?? 'N/A'); ?></td>
                                 <td><?php echo formatDate($tx['created_at']); ?></td>
                             </tr>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     </tbody>
                 </table>
             <?php else: ?>
