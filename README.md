@@ -1,8 +1,5 @@
 # 🚀 Softlink Broker
 
-![Softlink Broker Cover](assets/softlink-broker-cover.png)
-# 🚀 Softlink Broker
-
 A modern **Broker Management System** built to demonstrate scalable web application development using **HTML, CSS, Node.js, PHP, and MongoDB**.
 
 Softlink Broker is designed as a foundation for brokerage, fintech, and business management platforms. It provides a structured architecture that can be extended into a production-ready SaaS application.
