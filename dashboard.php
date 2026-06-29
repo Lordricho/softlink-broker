@@ -243,6 +243,9 @@ try {
             <li><a href="dashboard.php">📊 Dashboard</a></li>
             <li><a href="deposit.php">💰 Deposit Funds</a></li>
             <li><a href="withdraw.php">🏦 Withdraw</a></li>
+            <?php if (!empty($_SESSION['is_admin'])): ?>
+            <li><a href="admin_dashboard.php" style="color:#7c3aed;">⚙️ Admin Panel</a></li>
+            <?php endif; ?>
             <li><a href="config/logout.php">🚪 Logout</a></li>
         </ul>
     </aside>

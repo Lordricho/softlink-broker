@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     } else {
         try {
             // Query user by email
-            $stmt = $conn->prepare('SELECT id, fullname, email, password FROM users WHERE email = :email');
+            $stmt = $conn->prepare('SELECT id, fullname, email, password, is_admin FROM users WHERE email = :email');
             $stmt->execute([':email' => $email]);
 
             if ($stmt->rowCount() === 1) {
@@ -35,10 +35,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 if (password_verify($password, $user['password'])) {
                     // Password correct - create session
                     $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['is_admin'] = (bool) $user['is_admin'];
                     $_SESSION['user'] = [
-                        'id' => $user['id'],
+                        'id'       => $user['id'],
                         'fullname' => $user['fullname'],
-                        'email' => $user['email']
+                        'email'    => $user['email'],
+                        'is_admin' => (bool) $user['is_admin'],
                     ];
 
                     // Log login activity
