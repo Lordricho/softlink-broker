@@ -5,11 +5,11 @@
  * Uses PDO for better compatibility and security
  */
 
-$db_host = getenv('DB_HOST') ?: 'localhost';
-$db_name = getenv('DB_NAME') ?: 'softlink_broker';
-$db_user = getenv('DB_USER') ?: 'postgres';
-$db_pass = getenv('DB_PASS') ?: '';
-$db_port = getenv('DB_PORT') ?: 5432;
+$db_host = getenv('PGHOST') ?: getenv('DB_HOST') ?: 'localhost';
+$db_name = getenv('PGDATABASE') ?: getenv('DB_NAME') ?: 'softlink_broker';
+$db_user = getenv('PGUSER') ?: getenv('DB_USER') ?: 'postgres';
+$db_pass = getenv('PGPASSWORD') ?: getenv('DB_PASS') ?: '';
+$db_port = getenv('PGPORT') ?: getenv('DB_PORT') ?: 5432;
 
 try {
     // DSN for PostgreSQL
