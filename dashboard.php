@@ -241,9 +241,8 @@ try {
         <h3>Navigation</h3>
         <ul>
             <li><a href="dashboard.php">📊 Dashboard</a></li>
-            <li><a href="#deposit">💰 Deposit Funds</a></li>
-            <li><a href="#withdraw">🏦 Withdraw</a></li>
-            <li><a href="#settings">⚙️ Settings</a></li>
+            <li><a href="deposit.php">💰 Deposit Funds</a></li>
+            <li><a href="withdraw.php">🏦 Withdraw</a></li>
             <li><a href="config/logout.php">🚪 Logout</a></li>
         </ul>
     </aside>
