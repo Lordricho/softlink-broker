@@ -243,8 +243,9 @@ try {
             <li><a href="dashboard.php">📊 Dashboard</a></li>
             <li><a href="deposit.php">💰 Deposit Funds</a></li>
             <li><a href="withdraw.php">🏦 Withdraw</a></li>
+            <li><a href="settings.php">⚙️ Settings</a></li>
             <?php if (!empty($_SESSION['is_admin'])): ?>
-            <li><a href="admin_dashboard.php" style="color:#7c3aed;">⚙️ Admin Panel</a></li>
+            <li><a href="admin_dashboard.php" style="color:#7c3aed;">🔐 Admin Panel</a></li>
             <?php endif; ?>
             <li><a href="config/logout.php">🚪 Logout</a></li>
         </ul>
@@ -291,8 +292,8 @@ try {
                 <p><strong>Member Since:</strong> <?php echo formatDate($user['created_at']); ?></p>
             </div>
             <div class="action-buttons">
-                <a href="#" class="btn">Edit Profile</a>
-                <a href="#" class="btn secondary">Change Password</a>
+                <a href="settings.php" class="btn">Edit Profile</a>
+                <a href="settings.php#password" class="btn secondary">Change Password</a>
             </div>
         </div>
 
