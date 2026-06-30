@@ -58,16 +58,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             'is_admin' => (bool) $user['is_admin'],
                         ];
 
-                        // Log login activity
-                        $log_stmt = $conn->prepare(
-                            'INSERT INTO login_logs (user_id, login_time, ip_address, user_agent) '
-                            . 'VALUES (:user_id, CURRENT_TIMESTAMP, :ip_address, :user_agent)'
-                        );
-                        $log_stmt->execute([
-                            ':user_id'    => $user['id'],
-                            ':ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
-                            ':user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
-                        ]);
+                        // Log login activity + update last_login_at
+                        try {
+                            $conn->prepare(
+                                'INSERT INTO login_logs (user_id, login_time, ip_address, user_agent, status) '
+                                . 'VALUES (:user_id, CURRENT_TIMESTAMP, :ip_address, :user_agent, \'success\')'
+                            )->execute([
+                                ':user_id'    => $user['id'],
+                                ':ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
+                                ':user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
+                            ]);
+                            $conn->prepare('UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = :id')
+                                 ->execute([':id' => $user['id']]);
+                        } catch (PDOException $logErr) {
+                            error_log('Login log error: ' . $logErr->getMessage());
+                        }
 
                         header('Location: dashboard.php');
                         exit();
