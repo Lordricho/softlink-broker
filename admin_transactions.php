@@ -290,6 +290,7 @@ function csvUrl(): string {
             <a href="admin_users.php"><span class="icon">👥</span> User Management</a>
             <a href="admin_transactions.php" class="active"><span class="icon">🔄</span> Transactions</a>
             <a href="admin_adjustment.php"><span class="icon">⚙️</span> Adjustments</a>
+            <a href="admin_notifications.php"><span class="icon">🔔</span> Notifications <span id="sb-notif-badge" style="display:none;background:#dc2626;color:white;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:800;margin-left:4px;vertical-align:middle;"></span></a>
             <hr class="sidebar-divider">
             <a href="dashboard.php"><span class="icon">👤</span> My Dashboard</a>
             <a href="deposit.php"><span class="icon">💰</span> Deposit</a>
@@ -546,5 +547,18 @@ function csvUrl(): string {
         </div>
     </main>
 </div>
+<script>
+(function pollBadge(){
+    fetch('api/notifications_count.php')
+        .then(r=>r.json())
+        .then(d=>{
+            var b=document.getElementById('sb-notif-badge');
+            if(!b)return;
+            if(d.unread>0){b.textContent=d.unread>99?'99+':d.unread;b.style.display='inline';}
+            else{b.style.display='none';}
+        }).catch(()=>{});
+    setTimeout(pollBadge,30000);
+})();
+</script>
 </body>
 </html>

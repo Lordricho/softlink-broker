@@ -37,6 +37,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     if ($user['is_suspended']) {
                         $message = 'Your account has been suspended. Please contact support for assistance.';
                         $message_type = 'error';
+                        // Alert admins of the blocked attempt
+                        include_once('config/notify.php');
+                        createNotification($conn, [
+                            'event_type'  => 'suspended_login_attempt',
+                            'category'    => 'security',
+                            'priority'    => 'critical',
+                            'title'       => '🚨 Suspended Account Login Attempt',
+                            'description' => "User '{$user['fullname']}' ({$user['email']}) attempted login on a suspended account. IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'),
+                            'user_id'     => $user['id'],
+                        ]);
                     } else {
                         // Password correct and account active — create session
                         $_SESSION['user_id'] = $user['id'];

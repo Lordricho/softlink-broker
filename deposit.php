@@ -60,6 +60,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $conn->commit();
 
+            // Notify admins
+            include_once('config/notify.php');
+            createNotification($conn, [
+                'event_type'  => 'deposit_completed',
+                'category'    => 'transactions',
+                'priority'    => 'low',
+                'title'       => 'Deposit Completed',
+                'description' => $user['fullname'] . ' deposited ' . formatCurrency($amount) . '. Ref: ' . $reference,
+                'user_id'     => $user_id,
+                'reference'   => $reference,
+            ]);
+
             // Refresh balance display
             $user['balance'] += $amount;
 

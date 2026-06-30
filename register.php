@@ -76,6 +76,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // Log registration
                 error_log('New user registered: ' . $email . ' (ID: ' . $user_id . ')');
 
+                // Notify admins
+                include_once('config/notify.php');
+                createNotification($conn, [
+                    'event_type'  => 'new_user_registration',
+                    'category'    => 'user_accounts',
+                    'priority'    => 'medium',
+                    'title'       => 'New User Registered',
+                    'description' => "New account: {$fullname} ({$email})" . ($phone ? ", Phone: {$phone}" : '') . ". User ID: #{$user_id}",
+                    'user_id'     => $user_id,
+                ]);
+
                 // Redirect to dashboard
                 header('Location: dashboard.php');
                 exit();

@@ -5,6 +5,7 @@
  */
 include('config/db.php');
 include('config/auth.php');
+include_once('config/notify.php');
 
 $admin_id = requireAdmin();
 
@@ -49,18 +50,43 @@ try {
             $new_val = $target['is_admin'] ? 'FALSE' : 'TRUE';
             $conn->prepare("UPDATE users SET is_admin = {$new_val} WHERE id = :id")->execute([':id' => $user_id]);
             $label = $target['is_admin'] ? 'demoted from admin' : 'promoted to admin';
+            createNotification($conn, [
+                'event_type'  => 'admin_action_toggle_admin',
+                'category'    => 'admin_actions',
+                'priority'    => 'high',
+                'title'       => 'Admin Role Changed',
+                'description' => $target['fullname'] . ' has been ' . $label . ' by admin #' . $admin_id . '.',
+                'user_id'     => $user_id,
+            ]);
             ok(htmlspecialchars($target['fullname']) . ' has been ' . $label . '.', $redirect);
 
         case 'toggle_verified':
             $new_val = $target['is_verified'] ? 'FALSE' : 'TRUE';
             $conn->prepare("UPDATE users SET is_verified = {$new_val} WHERE id = :id")->execute([':id' => $user_id]);
             $label = $target['is_verified'] ? 'marked as unverified' : 'verified';
+            createNotification($conn, [
+                'event_type'  => 'admin_action_toggle_verified',
+                'category'    => 'admin_actions',
+                'priority'    => 'medium',
+                'title'       => 'User Verification Changed',
+                'description' => $target['fullname'] . ' has been ' . $label . ' by admin #' . $admin_id . '.',
+                'user_id'     => $user_id,
+            ]);
             ok(htmlspecialchars($target['fullname']) . ' has been ' . $label . '.', $redirect);
 
         case 'toggle_suspended':
             $new_val = $target['is_suspended'] ? 'FALSE' : 'TRUE';
             $conn->prepare("UPDATE users SET is_suspended = {$new_val} WHERE id = :id")->execute([':id' => $user_id]);
-            $label = $target['is_suspended'] ? 'reactivated' : 'suspended';
+            $label        = $target['is_suspended'] ? 'reactivated' : 'suspended';
+            $isSuspending = !$target['is_suspended'];
+            createNotification($conn, [
+                'event_type'  => 'admin_action_toggle_suspended',
+                'category'    => $isSuspending ? 'security' : 'admin_actions',
+                'priority'    => $isSuspending ? 'high'     : 'medium',
+                'title'       => $isSuspending ? 'Account Suspended' : 'Account Reactivated',
+                'description' => $target['fullname'] . '\'s account has been ' . $label . ' by admin #' . $admin_id . '.',
+                'user_id'     => $user_id,
+            ]);
             ok(htmlspecialchars($target['fullname']) . '\'s account has been ' . $label . '.', $redirect);
 
         default:
