@@ -289,6 +289,7 @@ function csvUrl(): string {
             <a href="admin_dashboard.php"><span class="icon">📊</span> Overview</a>
             <a href="admin_users.php"><span class="icon">👥</span> User Management</a>
             <a href="admin_transactions.php" class="active"><span class="icon">🔄</span> Transactions</a>
+            <a href="admin_adjustment.php"><span class="icon">⚙️</span> Adjustments</a>
             <hr class="sidebar-divider">
             <a href="dashboard.php"><span class="icon">👤</span> My Dashboard</a>
             <a href="deposit.php"><span class="icon">💰</span> Deposit</a>
@@ -462,11 +463,12 @@ function csvUrl(): string {
                         <th>Status</th>
                         <th>Reference</th>
                         <th>Date</th>
+                        <th style="width:80px;">Adjust</th>
                     </tr>
                 </thead>
                 <tbody>
                 <?php if (empty($transactions)): ?>
-                    <tr class="empty-row"><td colspan="8">No transactions match your filters.</td></tr>
+                    <tr class="empty-row"><td colspan="9">No transactions match your filters.</td></tr>
                 <?php else: ?>
                     <?php foreach ($transactions as $tx): ?>
                     <tr>
@@ -498,6 +500,12 @@ function csvUrl(): string {
                             <?php echo htmlspecialchars($tx['reference'] ?: '—'); ?>
                         </td>
                         <td style="font-size:12px;color:#64748b;white-space:nowrap;"><?php echo formatDate($tx['created_at']); ?></td>
+                        <td>
+                            <a href="admin_adjustment.php?tx_id=<?php echo $tx['id']; ?>"
+                               style="display:inline-block;padding:4px 11px;background:#ede9fe;color:#6d28d9;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;white-space:nowrap;">
+                                ⚙️ Adjust
+                            </a>
+                        </td>
                     </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>

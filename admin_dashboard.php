@@ -329,6 +329,9 @@ $admin = $admin_stmt->fetch();
             <a href="admin_transactions.php">
                 <span class="icon">🔄</span> Transactions
             </a>
+            <a href="admin_adjustment.php">
+                <span class="icon">⚙️</span> Adjustments
+            </a>
             <hr class="sidebar-divider">
             <a href="dashboard.php">
                 <span class="icon">👤</span> My Dashboard
