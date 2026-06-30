@@ -6,6 +6,7 @@
 include('config/db.php');
 include('config/auth.php');
 include_once('config/notify.php');
+include_once('config/user_notify.php');
 
 $admin_id = requireAdmin();
 
@@ -58,6 +59,13 @@ try {
                 'description' => $target['fullname'] . ' has been ' . $label . ' by admin #' . $admin_id . '.',
                 'user_id'     => $user_id,
             ]);
+            createUserNotification($conn, [
+                'user_id'    => $user_id,
+                'event_type' => 'admin_role_changed',
+                'priority'   => 'medium',
+                'title'      => '🔐 Account Role Updated',
+                'message'    => 'Your account has been ' . $label . ' by an administrator. Please refresh your session to see the updated access level.',
+            ]);
             ok(htmlspecialchars($target['fullname']) . ' has been ' . $label . '.', $redirect);
 
         case 'toggle_verified':
@@ -71,6 +79,13 @@ try {
                 'title'       => 'User Verification Changed',
                 'description' => $target['fullname'] . ' has been ' . $label . ' by admin #' . $admin_id . '.',
                 'user_id'     => $user_id,
+            ]);
+            createUserNotification($conn, [
+                'user_id'    => $user_id,
+                'event_type' => $target['is_verified'] ? 'account_unverified' : 'account_verified',
+                'priority'   => 'medium',
+                'title'      => $target['is_verified'] ? '❌ Verification Removed' : '✅ Account Verified',
+                'message'    => 'Your account verification status has been updated. Your account is now ' . $label . '.',
             ]);
             ok(htmlspecialchars($target['fullname']) . ' has been ' . $label . '.', $redirect);
 
@@ -86,6 +101,15 @@ try {
                 'title'       => $isSuspending ? 'Account Suspended' : 'Account Reactivated',
                 'description' => $target['fullname'] . '\'s account has been ' . $label . ' by admin #' . $admin_id . '.',
                 'user_id'     => $user_id,
+            ]);
+            createUserNotification($conn, [
+                'user_id'    => $user_id,
+                'event_type' => $isSuspending ? 'account_suspended' : 'account_reactivated',
+                'priority'   => $isSuspending ? 'high' : 'medium',
+                'title'      => $isSuspending ? '🚫 Account Suspended' : '✅ Account Reactivated',
+                'message'    => $isSuspending
+                    ? 'Your account has been suspended by an administrator. You will not be able to log in until the suspension is lifted. Please contact support for assistance.'
+                    : 'Your account suspension has been lifted. You can now log in and access your account normally.',
             ]);
             ok(htmlspecialchars($target['fullname']) . '\'s account has been ' . $label . '.', $redirect);
 

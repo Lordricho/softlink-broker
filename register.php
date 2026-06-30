@@ -76,6 +76,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // Log registration
                 error_log('New user registered: ' . $email . ' (ID: ' . $user_id . ')');
 
+                // Welcome notification for the new user
+                include_once('config/user_notify.php');
+                createUserNotification($conn, [
+                    'user_id'    => $user_id,
+                    'event_type' => 'welcome',
+                    'priority'   => 'low',
+                    'title'      => '🎉 Welcome to Softlink Broker!',
+                    'message'    => "Hi {$fullname}, your account has been created successfully. You can now deposit funds, make withdrawals, and manage your portfolio.",
+                ]);
+
                 // Notify admins
                 include_once('config/notify.php');
                 createNotification($conn, [

@@ -36,6 +36,19 @@ try {
     );
     $stats_stmt->execute([':user_id' => $user_id]);
     $stats = $stats_stmt->fetch();
+
+    // Unread notification count + recent unread (for widget)
+    $unread_notif       = 0;
+    $recent_notifs      = [];
+    try {
+        $ns = $conn->prepare("SELECT COUNT(*) FROM user_notifications WHERE user_id = :uid AND is_read = FALSE AND is_deleted = FALSE");
+        $ns->execute([':uid' => $user_id]);
+        $unread_notif = (int)$ns->fetchColumn();
+
+        $nr = $conn->prepare("SELECT id, title, message, priority, event_type, created_at FROM user_notifications WHERE user_id = :uid AND is_deleted = FALSE ORDER BY is_read ASC, created_at DESC LIMIT 3");
+        $nr->execute([':uid' => $user_id]);
+        $recent_notifs = $nr->fetchAll();
+    } catch (PDOException $ignored) {}
 } catch (PDOException $e) {
     error_log('Dashboard error: ' . $e->getMessage());
     die('Error loading dashboard. Please try again.');
@@ -244,6 +257,16 @@ try {
             <li><a href="deposit.php">💰 Deposit Funds</a></li>
             <li><a href="withdraw.php">🏦 Withdraw</a></li>
             <li><a href="settings.php">⚙️ Settings</a></li>
+            <li>
+                <a href="user_notifications.php">
+                    🔔 Notifications
+                    <?php if ($unread_notif > 0): ?>
+                    <span id="user-notif-badge" style="background:#dc2626;color:white;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:800;margin-left:4px;vertical-align:middle;"><?php echo $unread_notif > 99 ? '99+' : $unread_notif; ?></span>
+                    <?php else: ?>
+                    <span id="user-notif-badge" style="display:none;background:#dc2626;color:white;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:800;margin-left:4px;vertical-align:middle;"></span>
+                    <?php endif; ?>
+                </a>
+            </li>
             <?php if (!empty($_SESSION['is_admin'])): ?>
             <li><a href="admin_dashboard.php" style="color:#7c3aed;">🔐 Admin Panel</a></li>
             <?php endif; ?>
@@ -297,6 +320,57 @@ try {
             </div>
         </div>
 
+        <!-- Recent Notifications Widget -->
+        <?php if (!empty($recent_notifs)): ?>
+        <div class="section">
+            <h2 style="display:flex;align-items:center;gap:10px;">
+                🔔 Notifications
+                <?php if ($unread_notif > 0): ?>
+                <span style="background:#dc2626;color:white;border-radius:12px;padding:2px 10px;font-size:12px;font-weight:800;"><?php echo $unread_notif; ?> unread</span>
+                <?php endif; ?>
+                <a href="user_notifications.php" style="margin-left:auto;font-size:13px;font-weight:500;color:#007bff;text-decoration:none;">View all →</a>
+            </h2>
+            <?php
+            $notif_icons = [
+                'deposit_confirmed'=>'📥','withdrawal_confirmed'=>'📤','welcome'=>'🎉',
+                'account_verified'=>'✅','account_unverified'=>'❌','account_suspended'=>'🚫',
+                'account_reactivated'=>'✅','admin_role_changed'=>'🔐',
+                'password_changed'=>'🔑','security_alert'=>'🚨','admin_message'=>'📢',
+                'adjustment_applied'=>'⚙️',
+            ];
+            $notif_pri_colors = ['low'=>'#6c757d','medium'=>'#0369a1','high'=>'#a16207','critical'=>'#b91c1c'];
+            foreach ($recent_notifs as $rn):
+                $ico  = $notif_icons[$rn['event_type']] ?? '🔔';
+                $unrd = !$rn['is_read'] ?? false;
+            ?>
+            <div style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;background:<?php echo $unrd ? '#f5f3ff' : '#f8f9fa'; ?>;border-radius:8px;margin-bottom:8px;border-left:3px solid <?php echo $unrd ? '#7c3aed' : '#dee2e6'; ?>;">
+                <span style="font-size:20px;flex-shrink:0;line-height:1.3;"><?php echo $ico; ?></span>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:<?php echo $unrd ? '700' : '600'; ?>;color:#1e293b;font-size:13px;margin-bottom:2px;">
+                        <?php echo htmlspecialchars($rn['title']); ?>
+                        <?php if ($unrd): ?><span style="background:#7c3aed;color:white;border-radius:8px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:6px;">NEW</span><?php endif; ?>
+                    </div>
+                    <div style="font-size:12px;color:#64748b;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                        <?php echo htmlspecialchars(mb_strimwidth($rn['message'], 0, 90, '…')); ?>
+                    </div>
+                    <div style="font-size:11px;color:#94a3b8;">
+                        <span style="color:<?php echo $notif_pri_colors[$rn['priority']] ?? '#6c757d'; ?>;font-weight:700;text-transform:uppercase;font-size:10px;"><?php echo ucfirst($rn['priority']); ?></span>
+                        &nbsp;·&nbsp; <?php echo formatDate($rn['created_at']); ?>
+                    </div>
+                </div>
+                <?php if ($unrd): ?>
+                <form method="POST" action="user_notify_action.php" style="flex-shrink:0;">
+                    <input type="hidden" name="action"   value="mark_read">
+                    <input type="hidden" name="id"       value="<?php echo $rn['id']; ?>">
+                    <input type="hidden" name="redirect" value="dashboard.php">
+                    <button type="submit" style="padding:4px 10px;background:#dcfce7;color:#15803d;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">✓ Read</button>
+                </form>
+                <?php endif; ?>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
         <!-- Recent Transactions -->
         <div class="section">
             <h2>Recent Transactions</h2>
@@ -328,5 +402,18 @@ try {
     </main>
 </div>
 
+<script>
+(function pollBadge() {
+    fetch('api/user_notifications_count.php')
+        .then(r => r.json())
+        .then(d => {
+            var b = document.getElementById('user-notif-badge');
+            if (!b) return;
+            if (d.unread > 0) { b.textContent = d.unread > 99 ? '99+' : d.unread; b.style.display = 'inline'; }
+            else { b.style.display = 'none'; }
+        }).catch(() => {});
+    setTimeout(pollBadge, 30000);
+})();
+</script>
 </body>
 </html>

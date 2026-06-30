@@ -60,6 +60,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $conn->commit();
 
+            // Notify the user
+            include_once('config/user_notify.php');
+            createUserNotification($conn, [
+                'user_id'    => $user_id,
+                'event_type' => 'deposit_confirmed',
+                'priority'   => 'low',
+                'title'      => '📥 Deposit Confirmed',
+                'message'    => 'Your deposit of ' . formatCurrency($amount) . ' has been processed successfully. Reference: ' . $reference . '. Your updated balance reflects this transaction.',
+            ]);
+
             // Notify admins
             include_once('config/notify.php');
             createNotification($conn, [
@@ -241,6 +251,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <li><a href="dashboard.php">📊 Dashboard</a></li>
             <li><a href="deposit.php" class="active">💰 Deposit Funds</a></li>
             <li><a href="withdraw.php">🏦 Withdraw</a></li>
+            <li><a href="user_notifications.php">🔔 Notifications <span id="user-notif-badge" style="display:none;background:#dc2626;color:white;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:800;margin-left:4px;vertical-align:middle;"></span></a></li>
             <li><a href="config/logout.php">🚪 Logout</a></li>
         </ul>
     </aside>
@@ -303,5 +314,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </main>
 </div>
 
+<script>
+(function pollBadge() {
+    fetch('api/user_notifications_count.php')
+        .then(r => r.json())
+        .then(d => {
+            var b = document.getElementById('user-notif-badge');
+            if (!b) return;
+            if (d.unread > 0) { b.textContent = d.unread > 99 ? '99+' : d.unread; b.style.display = 'inline'; }
+            else { b.style.display = 'none'; }
+        }).catch(() => {});
+    setTimeout(pollBadge, 30000);
+})();
+</script>
 </body>
 </html>
