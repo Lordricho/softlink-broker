@@ -221,6 +221,7 @@ $initials  = strtoupper(mb_substr($u['fullname'], 0, 2));
         <nav>
             <a href="admin_dashboard.php"><span class="icon">📊</span> Overview</a>
             <a href="admin_users.php" class="active"><span class="icon">👥</span> User Management</a>
+            <a href="admin_transactions.php"><span class="icon">🔄</span> Transactions</a>
             <hr class="sidebar-divider">
             <a href="dashboard.php"><span class="icon">👤</span> My Dashboard</a>
             <a href="deposit.php"><span class="icon">💰</span> Deposit</a>
